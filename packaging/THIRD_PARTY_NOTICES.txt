@@ -1,0 +1,52 @@
+Triforce Recompiled - third-party components
+=============================================
+
+TriforceRecompiled.exe is built from:
+
+  Triforce Recompiled (this project)       GPL-2.0-or-later
+    https://github.com/Tillundmausi/Triforce-Recompiled
+  Azahar 3DS emulator core                 GPL (see LICENSE-GPL3.txt; source files GPLv2+)
+    https://github.com/azahar-emu/azahar
+    commit 11eceda5e0e682a1f44e396bf954a1b9137097ca + patches in the project's patches/ folder
+    (Azahar is the successor of the Citra project)
+  Dear ImGui                               MIT        https://github.com/ocornut/imgui
+
+Libraries that are part of the Azahar build (as pinned by the commit above;
+full license texts are in each project's repository):
+
+  SDL2                    zlib                      https://www.libsdl.org
+  dynarmic, mcl           0BSD / MIT                https://github.com/azahar-emu/dynarmic
+  Zydis                   MIT                       https://github.com/zyantific/zydis
+  xbyak                   BSD-3-Clause              https://github.com/herumi/xbyak
+  Boost                   BSL-1.0                   https://www.boost.org
+  fmt                     MIT                       https://github.com/fmtlib/fmt
+  Crypto++                BSL-1.0                   https://github.com/weidai11/cryptopp
+  LibreSSL                ISC / OpenSSL / SSLeay    https://www.libressl.org
+  ENet                    MIT                       https://github.com/lsalzman/enet
+  SoundTouch              LGPL-2.1                  https://codeberg.org/soundtouch/soundtouch
+  cubeb                   ISC                       https://github.com/mozilla/cubeb
+  OpenAL Soft             LGPL-2.0-or-later         https://github.com/kcat/openal-soft
+  FAAD2                   GPL-2.0-or-later          https://github.com/knik0/faad2
+  teakra                  MIT                       https://github.com/wwylele/teakra
+  zstd                    BSD-3-Clause              https://github.com/facebook/zstd
+  xxHash                  BSD-2-Clause              https://github.com/Cyan4973/xxHash
+  libyuv                  BSD-3-Clause              https://chromium.googlesource.com/libyuv/libyuv
+  lodepng                 zlib                      https://github.com/lvandeve/lodepng
+  glslang                 BSD-3-Clause and others   https://github.com/KhronosGroup/glslang
+  SPIRV-Tools             Apache-2.0                https://github.com/KhronosGroup/SPIRV-Tools
+  sirit                   BSD-3-Clause              https://github.com/yuzu-emu/sirit
+  Vulkan-Headers          Apache-2.0 / MIT          https://github.com/KhronosGroup/Vulkan-Headers
+  Vulkan Memory Allocator MIT                       https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
+  glad                    MIT                       https://github.com/Dav1dde/glad
+  nihstro                 BSD-3-Clause              https://github.com/neobrain/nihstro
+
+Files shipped next to the exe:
+
+  steam_api64.dll         Steamworks API, (c) Valve Corporation. Redistributable part of
+                          the Steamworks SDK. https://partner.steamgames.com
+  msvcp140*.dll, vcruntime140*.dll, concrt140.dll (if present)
+                          Microsoft Visual C++ runtime, (c) Microsoft Corporation.
+                          Redistributable under the Visual Studio license terms.
+
+Trademarks: "The Legend of Zelda", "Tri Force Heroes" and "Nintendo 3DS" are
+trademarks of Nintendo. This project is not affiliated with or endorsed by Nintendo.

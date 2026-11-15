@@ -1,0 +1,33 @@
+# Build output
+build/
+build-*/
+out/
+dist/
+release/
+
+# Downloaded / extracted dependencies (fetched by setup_game.bat)
+external/
+steamworks_sdk*.zip
+
+# Game data - never commit Nintendo content
+game/*.cia
+game_data/
+user/
+*.cia
+*.3ds
+*.cci
+*.cxi
+*.app
+*.cro
+*.bin
+!tests/fixtures/**/*.bin
+
+# Logs, crash dumps, symbols
+*.log
+*.dmp
+*.pdb
+
+# IDE
+.vs/
+.vscode/
+*.user

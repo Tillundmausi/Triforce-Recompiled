@@ -1,0 +1,51 @@
+diff --git a/src/core/file_sys/ivfc_archive.cpp b/src/core/file_sys/ivfc_archive.cpp
+index 43f4fae..6f60194 100644
+--- a/src/core/file_sys/ivfc_archive.cpp
++++ b/src/core/file_sys/ivfc_archive.cpp
+@@ -2,6 +2,7 @@
+ // Licensed under GPLv2 or any later version
+ // Refer to the misc/licenses/gplv2.txt file included.
+ 
++#include <atomic>
+ #include <cstring>
+ #include <memory>
+ #include <utility>
+@@ -95,9 +96,20 @@ IVFCFile::IVFCFile(std::shared_ptr<RomFSReader> file,
+     delay_generator = std::move(delay_generator_);
+ }
+ 
++namespace {
++std::atomic<RomFSReadHook> g_romfs_read_hook{nullptr};
++} // namespace
++
++void SetRomFSReadHook(RomFSReadHook hook) {
++    g_romfs_read_hook.store(hook, std::memory_order_release);
++}
++
+ ResultVal<std::size_t> IVFCFile::Read(const u64 offset, const std::size_t length,
+                                       u8* buffer) const {
+     LOG_TRACE(Service_FS, "called offset={}, length={}", offset, length);
++    if (const auto hook = g_romfs_read_hook.load(std::memory_order_acquire)) {
++        hook(romfs_file.get(), offset, length);
++    }
+     return romfs_file->ReadFile(offset, length, buffer);
+ }
+ 
+diff --git a/src/core/file_sys/ivfc_archive.h b/src/core/file_sys/ivfc_archive.h
+index 12d9681..828d02c 100644
+--- a/src/core/file_sys/ivfc_archive.h
++++ b/src/core/file_sys/ivfc_archive.h
+@@ -117,6 +117,13 @@ protected:
+     std::shared_ptr<RomFSReader> romfs_file;
+ };
+ 
++/**
++ * Optional observer for RomFS reads (used by frontends, e.g. to show which game
++ * files are loaded). Called on the reading thread before every IVFCFile read.
++ */
++using RomFSReadHook = void (*)(RomFSReader* reader, u64 offset, std::size_t length);
++void SetRomFSReadHook(RomFSReadHook hook);
++
+ class IVFCFile : public FileBackend {
+ public:
+     IVFCFile(std::shared_ptr<RomFSReader> file, std::unique_ptr<DelayGenerator> delay_generator_);

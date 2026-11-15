@@ -1,0 +1,98 @@
+diff --git a/src/network/room_member.cpp b/src/network/room_member.cpp
+index decc4e5..f59e1d2 100644
+--- a/src/network/room_member.cpp
++++ b/src/network/room_member.cpp
+@@ -42,6 +42,9 @@ public:
+ 
+     MacAddress mac_address; ///< The mac_address of this member.
+ 
++    std::mutex external_mutex;                   ///< Guards external_send (TFH PC).
++    RoomMember::ExternalSendFn external_send;    ///< Set while using an external transport.
++
+     std::mutex network_mutex; ///< Mutex that controls access to the `client` variable.
+     /// Thread that receives and dispatches network packets
+     std::unique_ptr<std::thread> loop_thread;
+@@ -587,6 +590,15 @@ bool RoomMember::IsConnected() const {
+ }
+ 
+ void RoomMember::SendWifiPacket(const WifiPacket& wifi_packet) {
++    ExternalSendFn external_send;
++    {
++        std::lock_guard lock(room_member_impl->external_mutex);
++        external_send = room_member_impl->external_send;
++    }
++    if (external_send) { // called outside the lock: the transport may take its own locks
++        external_send(wifi_packet);
++        return;
++    }
+     Packet packet;
+     packet << static_cast<u8>(IdWifiPacket);
+     packet << static_cast<u8>(wifi_packet.type);
+@@ -678,7 +690,45 @@ void RoomMember::Unbind(CallbackHandle<T> handle) {
+     room_member_impl->callbacks.Get<T>().erase(handle);
+ }
+ 
++void RoomMember::ConnectExternal(const std::string& nick, const MacAddress& mac,
++                                 ExternalSendFn send) {
++    if (room_member_impl->loop_thread) {
++        Leave();
++    }
++    {
++        std::lock_guard lock(room_member_impl->external_mutex);
++        room_member_impl->external_send = std::move(send);
++    }
++    room_member_impl->nickname = nick;
++    room_member_impl->mac_address = mac;
++    room_member_impl->SetState(State::Joined);
++}
++
++void RoomMember::DisconnectExternal() {
++    {
++        std::lock_guard lock(room_member_impl->external_mutex);
++        if (!room_member_impl->external_send) {
++            return;
++        }
++        room_member_impl->external_send = nullptr;
++    }
++    room_member_impl->SetState(State::Idle);
++}
++
++bool RoomMember::IsExternal() const {
++    std::lock_guard lock(room_member_impl->external_mutex);
++    return static_cast<bool>(room_member_impl->external_send);
++}
++
++void RoomMember::InjectWifiPacket(const WifiPacket& packet) {
++    room_member_impl->Invoke<WifiPacket>(packet);
++}
++
+ void RoomMember::Leave() {
++    if (!room_member_impl->loop_thread) {
++        DisconnectExternal();
++        return;
++    }
+     room_member_impl->SetState(State::Idle);
+     room_member_impl->loop_thread->join();
+     room_member_impl->loop_thread.reset();
+diff --git a/src/network/room_member.h b/src/network/room_member.h
+index 4e91087..3f307c8 100644
+--- a/src/network/room_member.h
++++ b/src/network/room_member.h
+@@ -270,6 +270,17 @@ public:
+      */
+     void Leave();
+ 
++    // --- Tri Force Heroes PC: external transport (e.g. Steam) -------------------
++    // Lets a frontend carry UDS wifi packets over its own network layer instead of
++    // an ENet room. While connected externally the member reports State::Joined,
++    // SendWifiPacket() goes to `send`, and InjectWifiPacket() delivers received
++    // packets to everything bound via BindOnWifiPacketReceived().
++    using ExternalSendFn = std::function<void(const WifiPacket&)>;
++    void ConnectExternal(const std::string& nick, const MacAddress& mac, ExternalSendFn send);
++    void DisconnectExternal();
++    bool IsExternal() const;
++    void InjectWifiPacket(const WifiPacket& packet);
++
+ private:
+     class RoomMemberImpl;
+     std::unique_ptr<RoomMemberImpl> room_member_impl;
