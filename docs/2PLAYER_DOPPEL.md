@@ -28,6 +28,13 @@ Taken from Tricord's public address collection (a 3DS plugin for this game); the
 addresses are the same in Azahar because the address space is the emulated one.
 Per-player state is laid out in blocks with a stride of `0x10000` (players 0/1/2).
 
+Cross-check against our dump: the list's *code* addresses (e.g. `DoppelLobbyReset`
+`0x0058C744`, `DoppelStageResetA..C` `0x00315F38..40`) fall inside our `.text`
+(`0x00100000` + `0x57B240`) and disassemble to coherent ARM code, so the list was made
+for this build family. The *data* addresses below live in the game's runtime-allocated
+state, so they cannot be proven offline - the research panel in Settings -> Controls
+prints them while playing, which is the first step of the experiment.
+
 | Name | EUR address | Notes |
 |---|---|---|
 | `DoppelsEnabled` | `0x32D81EC6` | u8. 1 = single-player/doppel mode, 0 = network mode |
@@ -82,6 +89,13 @@ above, off by default). It needs two clients and a save in the Hytopia lobby to 
 
 Run a third game instance that joins and follows the group. Blocked by Steam (one account
 per lobby) and it would need a position-following bot on top. Not worth it.
+
+## Tooling in the app
+
+Settings -> Controls -> *Research: doppel in online sessions* reads the values above from the
+running game (`DoppelsEnabled`, `ActiveLink`, level/stage, network state, hero positions), can
+copy them to the clipboard, and has the experimental *Force DoppelsEnabled = 1* switch. The
+switch is not saved on purpose, so it is off again after every start.
 
 ## Experiment plan (needs ~1 hour, two clients, a save in Hytopia)
 
