@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 (2026-11-16)
 ### Game
 - Single player: **Tab** (or the right stick click on a controller) switches between Link and the
   two Doppels by tapping the Doppel panels on the touch screen, so the mouse is not needed for

@@ -74,7 +74,7 @@ fs::path ExeDirectory() {
 #endif
 }
 
-constexpr const char* kVersion = "0.1.1";
+constexpr const char* kVersion = "0.2.0";
 constexpr u64 kTargetTitleId = 0x0004000000177000ull; // Tri Force Heroes EUR (project target)
 
 void ShowError(const std::string& text) {
