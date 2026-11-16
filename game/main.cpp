@@ -72,7 +72,7 @@ fs::path ExeDirectory() {
 #endif
 }
 
-constexpr const char* kVersion = "0.1.0";
+constexpr const char* kVersion = "0.1.1";
 constexpr u64 kTargetTitleId = 0x0004000000177000ull; // Tri Force Heroes EUR (project target)
 
 void ShowError(const std::string& text) {
@@ -352,6 +352,8 @@ int main(int argc, char** argv) {
         ShowError(std::string("SDL could not be started: ") + SDL_GetError());
         return 1;
     }
+    // Keep controllers alive while the launcher window has the focus.
+    SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
 
     // Steam is optional: without it the game still runs (single player).
     TFH::SteamNet steam;
@@ -363,6 +365,9 @@ int main(int argc, char** argv) {
 
     InitAzaharGlobals();
     TFH::ApplyToAzahar(cfg); // before InputCommon::Init, which reads the input profile
+    // Optional extra controller mappings (user/gamecontrollerdb.txt) for pads
+    // SDL does not know by itself; must be loaded before the pads are opened.
+    TFH::Input::LoadControllerMappings(userDir / "gamecontrollerdb.txt");
     InputCommon::Init();
     TFH::Input::RegisterAnyFactories();
     Network::Init();
@@ -464,6 +469,7 @@ int main(int argc, char** argv) {
 
         // -- background work ------------------------------------------------------------------
         steam.RunCallbacks();
+        TFH::Input::RefreshPads(); // pads SDL only sees as a plain joystick
         if (model.checking && checkFuture.valid() &&
             checkFuture.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
             model.check = checkFuture.get();

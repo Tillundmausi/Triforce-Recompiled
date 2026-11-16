@@ -4,7 +4,10 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <cstdint>
 #include <filesystem>
+#include <string>
+#include <vector>
 
 #include <SDL.h>
 #include <imgui.h>
@@ -20,6 +23,66 @@ namespace {
 
 int g_capture_bind = -1; // Bind index waiting for a key, -1 = none
 bool g_capture_changed = false;
+
+// Controller list for Settings -> Controls (also used to debug pads that the
+// game does not seem to see).
+struct PadInfo {
+    SDL_Joystick* joy = nullptr;
+    std::string name;
+    std::string guid;
+    bool game_controller = false;
+    int axes = 0;
+    int buttons = 0;
+    int hats = 0;
+};
+std::vector<PadInfo> g_pad_list;
+std::uint64_t g_pad_list_scan = 0;
+
+void ClosePadList() {
+    for (auto& p : g_pad_list)
+        if (p.joy) SDL_JoystickClose(p.joy);
+    g_pad_list.clear();
+}
+
+void ScanPadList() {
+    ClosePadList();
+    for (int i = 0; i < SDL_NumJoysticks(); ++i) {
+        SDL_Joystick* joy = SDL_JoystickOpen(i);
+        if (!joy) continue;
+        PadInfo info;
+        info.joy = joy;
+        info.name = SDL_JoystickName(joy) ? SDL_JoystickName(joy) : "?";
+        char guid[40] = {};
+        SDL_JoystickGetGUIDString(SDL_JoystickGetGUID(joy), guid, sizeof(guid));
+        info.guid = guid;
+        info.game_controller = SDL_IsGameController(i) == SDL_TRUE;
+        info.axes = SDL_JoystickNumAxes(joy);
+        info.buttons = SDL_JoystickNumButtons(joy);
+        info.hats = SDL_JoystickNumHats(joy);
+        g_pad_list.push_back(std::move(info));
+    }
+}
+
+// What the pad is sending right now, so a user can tell which button is which.
+std::string PadLiveState(const PadInfo& p) {
+    std::string out;
+    for (int b = 0; b < p.buttons; ++b)
+        if (SDL_JoystickGetButton(p.joy, b)) out += "B" + std::to_string(b) + " ";
+    for (int h = 0; h < p.hats; ++h) {
+        const int v = SDL_JoystickGetHat(p.joy, h);
+        if (v) out += "hat" + std::to_string(h) + "=" + std::to_string(v) + " ";
+    }
+    for (int a = 0; a < p.axes; ++a) {
+        const int v = SDL_JoystickGetAxis(p.joy, a);
+        if (v > 8000 || v < -8000) {
+            char buf[48];
+            std::snprintf(buf, sizeof(buf), "A%d=%+.2f ", a, static_cast<float>(v) / 32767.0f);
+            out += buf;
+        }
+    }
+    return out.empty() ? "(nothing pressed)" : out;
+}
+
 
 constexpr ImVec4 kAccent{0.24f, 0.62f, 0.33f, 1.0f};      // Link green
 constexpr ImVec4 kAccentHover{0.30f, 0.72f, 0.40f, 1.0f};
@@ -275,6 +338,47 @@ bool DrawControls(AppConfig& c) {
     if (ImGui::SliderFloat("Stick deadzone", &dz, 0.0f, 50.0f, "%.0f %%")) {
         c.stick_deadzone = dz / 100.0f;
         changed = true;
+    }
+    // A pad that works everywhere else but not here is usually a pad SDL does
+    // not know. Listing them takes the guesswork out of such reports.
+    if (SDL_GetTicks64() - g_pad_list_scan > 1000) {
+        g_pad_list_scan = SDL_GetTicks64();
+        ScanPadList();
+    }
+    ImGui::Spacing();
+    SectionTitle("Detected controllers");
+    if (g_pad_list.empty()) {
+        ImGui::TextColored(kMuted, "None. Connect the controller (and start the emulator app), then wait a second.");
+    } else {
+        bool any_generic = false;
+        for (const auto& p : g_pad_list) {
+            ImGui::PushID(p.joy);
+            ImGui::Text("%s", p.name.c_str());
+            ImGui::SameLine();
+            if (p.game_controller) {
+                ImGui::TextColored(kOk, "[recognised]");
+            } else {
+                ImGui::TextColored(kGold, "[generic pad]");
+                any_generic = true;
+            }
+            ImGui::TextColored(kMuted, "  %d axes, %d buttons, %d hats - GUID %s", p.axes, p.buttons, p.hats,
+                               p.guid.c_str());
+            ImGui::TextColored(kMuted, "  Now: %s", PadLiveState(p).c_str());
+            ImGui::PopID();
+        }
+        if (any_generic) {
+            Hint("A 'generic pad' is not known to SDL. It still works with the usual Xbox layout "
+                 "(bottom button = B, right button = A, ...). If the buttons are wrong, add a mapping "
+                 "line for its GUID to user/gamecontrollerdb.txt and restart.");
+        }
+        if (ImGui::Button("Copy controller info")) {
+            std::string text = "Triforce Recompiled - controllers\n";
+            for (const auto& p : g_pad_list)
+                text += p.name + " | " + (p.game_controller ? "SDL game controller" : "generic pad") + " | "
+                        + std::to_string(p.axes) + " axes, " + std::to_string(p.buttons) + " buttons, "
+                        + std::to_string(p.hats) + " hats | GUID " + p.guid + "\n";
+            SDL_SetClipboardText(text.c_str());
+        }
     }
 
     SectionTitle("Other keys");

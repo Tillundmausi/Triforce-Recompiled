@@ -93,7 +93,10 @@ unzip it anywhere, start `TriforceRecompiled.exe` and follow the **Setup** tab. 
 | Touch screen | mouse (bottom screen) | – |
 
 **Esc** = launcher/settings · **F11** = fullscreen · **F10** = screen layout · **F9** = swap screens.
-All keys can be changed in *Settings → Controls*.
+All keys can be changed in *Settings → Controls*. That page also lists the controllers the game
+sees (with live buttons/axes); pads it shows as *generic pad* are pads SDL does not know - they
+still work with the usual Xbox layout, and a mapping line for their GUID in `user/gamecontrollerdb.txt`
+fixes wrong buttons.
 
 ## Online co-op
 
