@@ -54,6 +54,9 @@ struct LauncherModel {
 
     // Live state read from the running game (Settings -> Controls, research panel).
     Research::Snapshot research;
+    std::string research_dump;  // result of the last memory dump (path or error)
+    std::array<char, 24> research_addr = {"32D81EC6"};
+    std::string research_peek;  // hex dump of research_addr (empty = not read yet)
 };
 
 // What the user asked for in this frame (handled by main).
@@ -67,6 +70,10 @@ struct LauncherActions {
     bool install = false;
     bool settings_changed = false;
     int doppel_test = -1;        // tap Doppel panel 0..2 (from the Controls page)
+    bool research_dump = false;  // write the game's memory to user/memdump
+    bool research_read = false;  // read the bytes at research_addr
+    bool research_write = false; // write one byte at research_addr
+    unsigned research_value = 0;
 };
 
 class Launcher {

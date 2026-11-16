@@ -18,38 +18,28 @@ also covers other screen layouts and swapped screens.
 
 In multiplayer the same panels show the other players, so turn the shortcut off there.
 
-### Research panel: doppels in online sessions
+### Research panel: hero bodies
 
-*Settings -> Controls -> "Research: doppel in online sessions"* shows what the game itself
-is doing while it runs: `DoppelsEnabled`, `ActiveLink`, level/stage, network state and the
-positions of all three heroes. **"Copy session state"** puts all of it on the clipboard.
+*Settings -> Controls -> "Research: hero bodies"* shows the three bodies the game keeps for the
+players - position and whether the slot holds a body at all. In single player all three slots are
+used (Link plus the two Doppels), in a network lobby only the first one is. **"Copy session
+state"** puts it on the clipboard, **"Dump memory"** writes the game's memory to
+`user\memdump\` (only useful for debugging, ~100 MB per dump), and the address field lets you
+read or write single bytes.
 
-There is also an experimental **"Force DoppelsEnabled = 1"** switch. It is not saved on
-purpose - it is off again after every start.
+These are developer tools for the "two players + one doppel" question - see
+[docs/2PLAYER_DOPPEL.md](https://github.com/Tillundmausi/Triforce-Recompiled/blob/main/docs/2PLAYER_DOPPEL.md).
 
 ## The experiment this build is for
 
-Goal: **two human players + one doppel** instead of three humans. The game's doppel mode is
-a flag plus an index, and networked bodies can be doppels (a known glitch proves it), but a
-session currently has to start with three consoles - so the missing piece is game-side.
+Goal: **two human players + one doppel** instead of three humans. The game keeps three hero
+bodies in single player (Link plus two doppels) but only one per console online, and a session
+currently has to start with three consoles - so the missing piece is game-side, not something a
+launcher setting can flip. The research panel in this build is the measuring tool for that work.
 
-This build measures the first half of that question.
-
-1. Everyone installs **this same build** (0.2.0) - mixed versions are not useful here.
-2. Play as usual: online session, three players, into a level.
-3. On **one** client: Esc -> Settings -> Controls -> *Research* -> press
-   **"Copy session state"** while you are still in the lobby or level (that is the "before").
-4. Then tick **"Force DoppelsEnabled = 1"** on that one client.
-5. Watch and note:
-   - do the other two Links keep moving normally, or do they freeze / snap back?
-   - does the camera stay on your Link?
-   - can you switch between the three characters (Tab / tapping the panels)?
-   - does the session survive, or does it kick someone out?
-6. Press **"Copy session state"** again (the "after") and send both texts, plus
-   `user\log\azahar_log.txt` if anything crashed or disconnected.
-
-Then untick the switch - normal behaviour should return immediately. If the game ends up in
-a strange state, a restart fixes it; nothing is written to the save file by this switch.
+If you want to help: play as usual (three players online), open *Settings -> Controls ->
+Research* and press **"Dump memory"** once in the lobby and once inside a level, then send the
+`user\memdump\mem_NNN.txt` files. Every dump pins down a bit more of the game's state.
 
 **Only the European version without update (CTR-P-EA3P) is mapped.** On any other version the
 numbers in the panel are meaningless (harmless, but useless). Tell us which version you use.
@@ -75,7 +65,8 @@ Windows may show a SmartScreen warning because the exe is not signed:
 - Steam shows you as playing *Spacewar* (Valve's free test app 480 is used for lobbies).
 - Only the European version without update has been tested.
 - Keep the launcher open while playing online - it carries the connection.
-- `Force DoppelsEnabled` is a research switch, not a finished feature: expect desyncs.
+- The research panel reads the game's own memory; it is a measuring tool, not a feature. Do not
+  expect doppels in an online session from this build.
 
 ## Files
 

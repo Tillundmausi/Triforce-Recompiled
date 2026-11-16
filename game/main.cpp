@@ -507,9 +507,7 @@ int main(int argc, char** argv) {
             const TFH::TouchPoint t = session.Window()->LastTouch();
             model.last_touch = {t.x, t.y};
             model.last_touch_valid = session.Window()->HasLastTouch();
-            // Research panel (docs/2PLAYER_DOPPEL.md): read the game's session state,
-            // and optionally force the doppel flag while playing.
-            if (cfg.research_force_doppels) TFH::Research::ForceDoppelsEnabled();
+            // Research panel (docs/2PLAYER_DOPPEL.md): read the three hero bodies.
             model.research = TFH::Research::Read();
         }
         if (model.checking && checkFuture.valid() &&
@@ -594,6 +592,17 @@ int main(int argc, char** argv) {
             model.game_running = false;
         }
         if (a.doppel_test >= 0) tapDoppel(a.doppel_test);
+        if (a.research_dump) model.research_dump = TFH::Research::DumpMemory(ToUtf8(userDir));
+        if ((a.research_read || a.research_write) && session.Running()) {
+            unsigned addr = 0;
+            if (std::sscanf(model.research_addr.data(), "%x", &addr) == 1 && addr != 0) {
+                if (a.research_write) {
+                    TFH::Research::Poke(addr, static_cast<unsigned char>(a.research_value));
+                }
+                if (a.research_read || a.research_write)
+                    model.research_peek = TFH::Research::Peek(addr);
+            }
+        }
         if (a.play && !session.Running()) {
             const std::string bootPath = IsCia(model.dump_path) ? InstalledAppPath(model.dump_path) : model.dump_path;
             steam.AttachToEmulator(Common::UTF16ToUTF8(playerName()));

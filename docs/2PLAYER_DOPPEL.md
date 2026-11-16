@@ -1,7 +1,7 @@
 # Two players + one doppel (research notes)
 
-Status: **research only - nothing implemented yet.** This file records what the game
-actually does, so the next attempt does not start from zero.
+Status: **research only - nothing implemented.** This file records what the game actually does
+and what we have verified in this build, so the next attempt does not start from zero.
 
 ## Why this is a game-code problem, not a frontend one
 
@@ -10,104 +10,102 @@ The two modes are built differently inside the game:
 | | Single player | Online (Local Play tunnelled over Steam) |
 |---|---|---|
 | Bodies | 3 bodies exist on one console | one body per console |
-| Control | `ActiveLink` picks which body the pad drives, the rest are doppels | each console sends input for its own body |
-| Doppels | yes (`DoppelsEnabled = 1`) | no (`DoppelsEnabled = 0`) |
+| Control | one index picks which body the pad drives, the rest are doppels | each console sends input for its own body |
+| Doppels | yes - the Hall of the Doppels binds them to you | no |
 | Entry | gateway opens for the doppel team | gateway needs 3 heroes |
 
 So "2 humans + 1 doppel" needs either
 
-* an online session that is allowed to start with **2** consoles **and** spawns the third
-  body as a doppel, or
+* an online session that is allowed to start with **2** consoles **and** that spawns the third
+  body as a doppel (on both clients, in sync), or
 * a networked single-player session (which does not exist).
 
 Both are game-code changes. The frontend can only supply inputs and memory access.
 
-## What the game exposes (verified addresses, EUR v0)
+## Verified for our build (EUR v0)
 
-Taken from Tricord's public address collection (a 3DS plugin for this game); the
-addresses are the same in Azahar because the address space is the emulated one.
-Per-player state is laid out in blocks with a stride of `0x10000` (players 0/1/2).
+The addresses published by the Tricord plugin are for game version **2.1.0**. This project runs
+title version **0**, and the two builds really do differ: in a memory dump of our build the whole
+camera block that Tricord uses (`0x32C81400`-`0x32C81680`) is zero. So the addresses below were
+found in-game for *our* build, by dumping memory and comparing several states.
 
-Cross-check against our dump: the list's *code* addresses (e.g. `DoppelLobbyReset`
-`0x0058C744`, `DoppelStageResetA..C` `0x00315F38..40`) fall inside our `.text`
-(`0x00100000` + `0x57B240`) and disassemble to coherent ARM code, so the list was made
-for this build family. The *data* addresses below live in the game's runtime-allocated
-state, so they cannot be proven offline - the research panel in Settings -> Controls
-prints them while playing, which is the first step of the experiment.
+How it was found: dump the game's memory (`Settings -> Controls -> Research -> Dump memory`),
+walk a few steps, dump again - a field that changed by the walking distance is a position. All
+dumps and their checksums are reproducible with `code.bin` (the dump contains the first 64 KB of
+`.text`, which must match byte for byte).
 
-| Name | EUR address | Notes |
+| What | Address | Notes |
 |---|---|---|
-| `DoppelsEnabled` | `0x32D81EC6` | u8. 1 = single-player/doppel mode, 0 = network mode |
-| `ActiveLink` | `0x31A038D1` | u8. 0/1/2 = controlled hero, **3 = this pad controls all heroes** |
-| `PositionX` | `0x32841358` | float, `+4` Y, `+8` Z, per-player `+0x10000` |
-| `HealthCurrent` | `0x32C82574` | float, per-player `+0x10000` |
-| `IsSpawned` | `0x32841490` | per-player |
-| `CurrLevelID` / `CurrStageID` | `0x3280EE44` / `0x3280EE48` | |
-| `PauseStatus` | `0x3280EE0C` | |
-| `HostDataStart` | `0x31A03664` | network state; `0xFFFFFFFD` = not connected |
+| Player slot 0 block | `0x3281A808` | slots 1 and 2 at `+0x10000` / `+0x20000` |
+| Position X | block `+0x1AC` | float; `+4` = Y, `+8` = Z |
+| Body present | block `+0x1C8` | `1` = a body exists in this slot, `0x80000000` (-0.0) = empty |
+| Player table | `0x32C5AE30` | pointers to the three blocks at `+0x14`, `+0x18`, `+0x1C` |
+| Lobby player records | `0x32C5BBFC` | stride `0xF4` (three slots); name as UTF-16 at `+0x40`, as ASCII at `+0xC4` |
 
-Two things follow from this:
+Measured states:
 
-1. The doppel mechanic is **not** a separate mode, it is a flag (`DoppelsEnabled`) plus an
-   index (`ActiveLink`). Height and camera follow the same index (`CameraLinkFocus`).
-2. `ActiveLink = 3` lets one pad drive all three heroes at once - that is what the Tricord
-   plugin calls *Control all players*. The engine already knows how to move a body that
-   "belongs" to nobody.
+* **Single player, Hytopia:** all three slots hold a body. Link stands at `x = 0.01`, the two
+  doppels at `x = -5.33` and `x = +5.33` - the game really keeps three full hero bodies with the
+  same structure in one session.
+* **Online lobby, alone:** only slot 0 holds a body; slots 1 and 2 exist but are marked empty.
+* Walking changed `X`/`Z` of slot 0 by the movement distance and left `Y` alone, exactly as a
+  world position should.
+
+Still unknown: the flag/enum that decides single player versus network mode, the level/stage
+ids, and the index of the controlled body. Finding them is possible with the same dump method established above, but
+it is the smaller half of the problem - see below.
 
 ## Evidence that networked bodies can be doppels
 
 There is a documented glitch ("Multiplayer Doppels", Zelda Wiki): while standing above the
-Triforce Gateway with the Water Rod, one player disconnects - the remaining bodies keep
-existing but behave like doppels that the host can switch between. So a body created by the
-network can be re-flagged as a doppel at runtime. That is the mechanism a patch would have
-to trigger deliberately, instead of by accident.
+Triforce Gateway with the Water Rod, one player disconnects - the remaining bodies keep existing
+but behave like doppels that the host can switch between (the host cannot pause or switch back
+until a game over). So a body created by the network can be re-flagged as a doppel at runtime.
+That is the mechanism a patch would have to trigger deliberately, instead of by accident.
+
+The game's own manual/wiki also states the boundaries: in the multiplayer lobby the gateway only
+activates once **all three heroes** have gathered, while the Hall of the Doppels exists for
+single player. The Coliseum is the one place that accepts two Links - that is a separate mode.
 
 ## Paths, with honest effort estimates
 
 ### A. Session patch - the real feature (large, uncertain)
 
-1. Let a session start with 2 consoles: find and bypass the "three heroes" check (probably
-   both a lobby/ready check and the gateway trigger).
-2. Spawn the third body as a doppel for both clients (same state on both sides).
+1. Let a session start with 2 consoles: find and bypass the "three heroes" check (probably both a
+   lobby/ready check and the gateway trigger).
+2. Spawn the third body as a doppel on **both** clients, with identical state - the doppel is
+   not a passive doll: it is used for totems, switches and throwing, so its position has to be
+   synchronised like a real player's.
 3. Both clients must run the identical patch, otherwise the session desyncs.
 
-Needs ARM patching of `code.bin` (LayeredFS code patch, or runtime writes from the
-frontend), plus a lot of in-level testing. Not something to guess at.
+Needs ARM patching of `code.bin` (LayeredFS code patch or runtime writes from the frontend),
+plus a lot of in-level testing. A GBAtemp thread asked for exactly this in 2016 and was told it
+means reverse engineering the whole game; it never went anywhere. Nothing to guess at.
 
-### B. Memory-flag prototype - the cheap first experiment (hours, low risk)
+### B. Memory-flag prototype - cheap, but only answers a partial question (hours)
 
-In a running 3-console session, set `DoppelsEnabled = 1` on one client and see what the game
-does. Two possible outcomes:
+Now that the player blocks are known, one can still poke single flags in a running 3-console
+session and watch what the game does. Useful outcome either way:
 
-* it tolerates it -> the remaining work shrinks to the 2-player start check (path A step 1),
-* it fights the network (bodies snapping back, desync) -> we know a flag alone is not enough.
+* it tolerates the single-player state -> the remaining work is the 2-player start check,
+* it fights the network (bodies snapping, desync) -> a flag alone is not enough.
 
-This can be exposed as an experimental toggle in the launcher (read/write the two addresses
-above, off by default). It needs two clients and a save in the Hytopia lobby to test.
+This needs two clients and a save in the Hytopia lobby, and it is *not* a feature yet.
 
 ### C. Third instance as a bot - rejected
 
-Run a third game instance that joins and follows the group. Blocked by Steam (one account
-per lobby) and it would need a position-following bot on top. Not worth it.
+Run a third game instance that joins and follows the group. Blocked by Steam (one account per
+lobby) and it would need a position-following bot on top. Not worth it.
 
 ## Tooling in the app
 
-Settings -> Controls -> *Research: doppel in online sessions* reads the values above from the
-running game (`DoppelsEnabled`, `ActiveLink`, level/stage, network state, hero positions), can
-copy them to the clipboard, and has the experimental *Force DoppelsEnabled = 1* switch. The
-switch is not saved on purpose, so it is off again after every start.
-
-## Experiment plan (needs ~1 hour, two clients, a save in Hytopia)
-
-1. Both clients: 3-player session as usual, but with the experiment toggle available.
-2. Stand in the lobby, read `DoppelsEnabled` / `ActiveLink` / positions on both clients -
-   confirm the addresses match what the game is doing (values change when walking).
-3. Enter a level with 3 players, set `DoppelsEnabled = 1` on one client only. Note:
-   camera, the other two bodies, input response, and whether the session stays up.
-4. Repeat with the flag set on both clients.
-5. Only then decide whether path A is worth it.
+`Settings -> Controls -> Research: hero bodies` reads the three slots from the running game,
+copies them to the clipboard, writes a memory dump (`user/memdump/mem_NNN_*.bin`, ~100 MB),
+and lets you read/write single bytes at an address typed in hex. That is the setup that produced
+the addresses above and it is what the next round of reverse engineering needs.
 
 ## Credits
 
-Memory layout discovered by the Tricord project (IcefirePhoenix) - no code copied, only
-addresses/facts, which we re-check against the game before using.
+The Tricord project (IcefirePhoenix) published an address collection for version 2.1.0 - no code
+copied, only facts, all of which were re-checked against this build. The "Multiplayer Doppels"
+glitch is documented on Zelda Wiki.

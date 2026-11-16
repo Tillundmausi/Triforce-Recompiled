@@ -470,33 +470,55 @@ bool DrawControls(AppConfig& c, const LauncherModel& m, LauncherActions& a) {
          "layouts and swapped screens. Multiplayer uses the same panels, so turn this off when you "
          "play online.");
 
-    SectionTitle("Research: doppel in online sessions");
+    SectionTitle("Research: hero bodies");
     const Research::Snapshot& r = m.research;
     if (!m.game_running) {
         ImGui::TextColored(kMuted, "Start the game to see its session state.");
     } else {
-        ImGui::Text("DoppelsEnabled %d   ActiveLink %d   Level %u   Stage %u   HostData 0x%08X",
-                    r.doppels_enabled, r.active_link, r.level_id, r.stage_id, r.host_data);
         for (int i = 0; i < 3; ++i)
-            ImGui::Text("Hero %d: %8.2f %8.2f %8.2f", i + 1, r.pos[i][0], r.pos[i][1], r.pos[i][2]);
+            ImGui::Text("Slot %d: %-6s %8.2f %8.2f %8.2f", i + 1,
+                        r.in_use[i] ? "used" : "empty", r.pos[i][0], r.pos[i][1], r.pos[i][2]);
         if (ImGui::Button("Copy session state")) {
             char buf[512];
             std::snprintf(buf, sizeof(buf),
-                          "DoppelsEnabled=%d ActiveLink=%d Level=%u Stage=%u HostData=0x%08X\n"
-                          "Hero1=%.2f,%.2f,%.2f Hero2=%.2f,%.2f,%.2f Hero3=%.2f,%.2f,%.2f",
-                          r.doppels_enabled, r.active_link, r.level_id, r.stage_id, r.host_data,
-                          r.pos[0][0], r.pos[0][1], r.pos[0][2], r.pos[1][0], r.pos[1][1],
-                          r.pos[1][2], r.pos[2][0], r.pos[2][1], r.pos[2][2]);
+                          "slot1=%s %.2f,%.2f,%.2f slot2=%s %.2f,%.2f,%.2f slot3=%s %.2f,%.2f,%.2f",
+                          r.in_use[0] ? "used" : "empty", r.pos[0][0], r.pos[0][1], r.pos[0][2],
+                          r.in_use[1] ? "used" : "empty", r.pos[1][0], r.pos[1][1], r.pos[1][2],
+                          r.in_use[2] ? "used" : "empty", r.pos[2][0], r.pos[2][1], r.pos[2][2]);
             SDL_SetClipboardText(buf);
         }
         ImGui::SameLine();
-        ImGui::TextColored(kMuted, "Hero 1/2/3 = green/blue/red, positions in world units");
+        ImGui::TextColored(kMuted, "the three hero bodies, positions in world units");
+        if (ImGui::Button("Dump memory")) a.research_dump = true;
+        ImGui::SameLine();
+        if (m.research_dump.empty())
+            ImGui::TextColored(kMuted, "writes user\\memdump\\mem_NNN_*.bin (~100 MB, takes a moment)");
+        else
+            ImGui::TextColored(kMuted, "%s", m.research_dump.c_str());
+
+        ImGui::SetNextItemWidth(140);
+        ImGui::InputText("Address (hex)", const_cast<char*>(m.research_addr.data()),
+                         m.research_addr.size(),
+                         ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_CharsUppercase);
+        ImGui::SameLine();
+        if (ImGui::Button("Read")) a.research_read = true;
+        ImGui::SameLine();
+        if (ImGui::Button("Write 1")) {
+            a.research_write = true;
+            a.research_value = 1;
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Write 0")) {
+            a.research_write = true;
+            a.research_value = 0;
+        }
+        if (!m.research_peek.empty()) ImGui::TextUnformatted(m.research_peek.c_str());
     }
-    changed |= ImGui::Checkbox("Force DoppelsEnabled = 1 (experimental)", &c.research_force_doppels);
-    Hint("Reads the game's session state (only the supported EUR build is mapped) and, while checked, "
-         "writes the doppel flag every frame. Meant for the experiment in docs/2PLAYER_DOPPEL.md: set it "
-         "in an online session to see whether the game keeps the three bodies apart. It does not create "
-         "the missing third body, and the session may desync - turn it off when you are done.");
+    Hint("The addresses are for the European build of this project (found in-game, see "
+         "docs/2PLAYER_DOPPEL.md): in single player all three slots hold a body (Link plus the "
+         "two Doppels), in a network lobby only slot 1 does. The flag that decides between the "
+         "two modes is still unknown - that is what the memory dump and the address field are "
+         "for.");
 
     SectionTitle("Other keys");
     ImGui::TextColored(kMuted, "Esc = open this launcher   F11 = fullscreen   F10 = layout   F9 = swap screens");

@@ -55,11 +55,6 @@ struct AppConfig {
     std::array<int, 3> doppel_x{236, 236, 236};
     std::array<int, 3> doppel_y{36, 115, 196};
 
-    // Research only (never written to config.ini): force the game's doppel flag while
-    // playing, to see whether an online session tolerates doppels. See
-    // docs/2PLAYER_DOPPEL.md - experimental, off at every start on purpose.
-    bool research_force_doppels = false;
-
     // Online
     std::string last_join_code;
 
