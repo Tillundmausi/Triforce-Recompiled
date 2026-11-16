@@ -470,6 +470,34 @@ bool DrawControls(AppConfig& c, const LauncherModel& m, LauncherActions& a) {
          "layouts and swapped screens. Multiplayer uses the same panels, so turn this off when you "
          "play online.");
 
+    SectionTitle("Research: doppel in online sessions");
+    const Research::Snapshot& r = m.research;
+    if (!m.game_running) {
+        ImGui::TextColored(kMuted, "Start the game to see its session state.");
+    } else {
+        ImGui::Text("DoppelsEnabled %d   ActiveLink %d   Level %u   Stage %u   HostData 0x%08X",
+                    r.doppels_enabled, r.active_link, r.level_id, r.stage_id, r.host_data);
+        for (int i = 0; i < 3; ++i)
+            ImGui::Text("Hero %d: %8.2f %8.2f %8.2f", i + 1, r.pos[i][0], r.pos[i][1], r.pos[i][2]);
+        if (ImGui::Button("Copy session state")) {
+            char buf[512];
+            std::snprintf(buf, sizeof(buf),
+                          "DoppelsEnabled=%d ActiveLink=%d Level=%u Stage=%u HostData=0x%08X\n"
+                          "Hero1=%.2f,%.2f,%.2f Hero2=%.2f,%.2f,%.2f Hero3=%.2f,%.2f,%.2f",
+                          r.doppels_enabled, r.active_link, r.level_id, r.stage_id, r.host_data,
+                          r.pos[0][0], r.pos[0][1], r.pos[0][2], r.pos[1][0], r.pos[1][1],
+                          r.pos[1][2], r.pos[2][0], r.pos[2][1], r.pos[2][2]);
+            SDL_SetClipboardText(buf);
+        }
+        ImGui::SameLine();
+        ImGui::TextColored(kMuted, "Hero 1/2/3 = green/blue/red, positions in world units");
+    }
+    changed |= ImGui::Checkbox("Force DoppelsEnabled = 1 (experimental)", &c.research_force_doppels);
+    Hint("Reads the game's session state (only the supported EUR build is mapped) and, while checked, "
+         "writes the doppel flag every frame. Meant for the experiment in docs/2PLAYER_DOPPEL.md: set it "
+         "in an online session to see whether the game keeps the three bodies apart. It does not create "
+         "the missing third body, and the session may desync - turn it off when you are done.");
+
     SectionTitle("Other keys");
     ImGui::TextColored(kMuted, "Esc = open this launcher   F11 = fullscreen   F10 = layout   F9 = swap screens");
     ImGui::TextColored(kMuted, "Mouse = touch screen (bottom screen)");

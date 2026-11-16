@@ -14,8 +14,12 @@
 
 ## Research
 - **2 players + 1 doppel**: let two human players play the 3-player mode with a doppel that
-  either player can switch into. Needs reverse engineering of the game's multiplayer and doppel
-  logic – large, uncertain effort.
+  either player can switch into. The game's doppel mode is a flag (`DoppelsEnabled`) plus a
+  controlled-body index (`ActiveLink`), and networked bodies can be re-flagged as doppels (the
+  "Multiplayer Doppels" glitch proves it) - but a session still has to *start* with two consoles
+  and spawn the third body. Findings, addresses and an experiment plan:
+  [2PLAYER_DOPPEL.md](2PLAYER_DOPPEL.md). Large, uncertain effort; next step is the cheap
+  `DoppelsEnabled` experiment with two clients.
 - **Static recompilation**: see [RECOMPILATION.md](RECOMPILATION.md).
 
 ## Decisions

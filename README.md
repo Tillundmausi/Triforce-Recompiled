@@ -150,8 +150,9 @@ TriforceRecompiled.exe
 - `src/`, `tools/ctrinspect`, `tests/` – the project's own 3DS container parser (CIA/NCSD/NCCH,
   ExHeader, ExeFS, BLZ, SHA-256) used to validate game files, plus unit tests. It is also the
   first step towards the static recompiler.
-- `docs/` – technical notes: [system interface of the game](docs/SYSTEM_SURFACE.md),
-  [recompilation plan](docs/RECOMPILATION.md), [roadmap](docs/ROADMAP.md), [changelog](docs/CHANGELOG.md).
+- `docs/` - technical notes: [system interface of the game](docs/SYSTEM_SURFACE.md),
+  [recompilation plan](docs/RECOMPILATION.md), [two players + doppel](docs/2PLAYER_DOPPEL.md),
+  [roadmap](docs/ROADMAP.md), [changelog](docs/CHANGELOG.md).
 
 ### Building the tools only
 

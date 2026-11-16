@@ -10,6 +10,7 @@
 #include <string>
 
 #include "game_file.h"
+#include "research.h"
 
 union SDL_Event;
 struct SDL_Window;
@@ -50,6 +51,9 @@ struct LauncherModel {
     // so the Doppel-panel positions can be picked from the game itself.
     std::array<int, 2> last_touch{};
     bool last_touch_valid = false;
+
+    // Live state read from the running game (Settings -> Controls, research panel).
+    Research::Snapshot research;
 };
 
 // What the user asked for in this frame (handled by main).

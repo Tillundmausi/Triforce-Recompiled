@@ -8,6 +8,9 @@
   Settings → Controls (with "Use last tap" to pick the spots in the game).
 - The frontend can now tap the touch screen at a given 3DS coordinate, independent of window size,
   screen layout and swapped screens.
+- Settings → Controls has a research panel that reads the game's session state (`DoppelsEnabled`,
+  `ActiveLink`, level/stage, hero positions) and can force the doppel flag. Experimental, for the
+  "two players + one doppel" work in [2PLAYER_DOPPEL.md](2PLAYER_DOPPEL.md).
 
 ## 0.1.1 (2026-11-16)
 ### Game

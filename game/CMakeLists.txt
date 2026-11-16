@@ -47,6 +47,8 @@ add_executable(tfh_game
     levels.h
     romfs_watch.cpp
     romfs_watch.h
+    research.cpp
+    research.h
     sdl_window.cpp
     sdl_window.h
     steam_net.cpp

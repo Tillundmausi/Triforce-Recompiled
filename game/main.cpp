@@ -26,6 +26,7 @@
 #include "game_file.h"
 #include "crash_handler.h"
 #include "discord_rpc.h"
+#include "research.h"
 #include "romfs_watch.h"
 #include "common/detached_tasks.h"
 #include "common/file_util.h"
@@ -506,6 +507,10 @@ int main(int argc, char** argv) {
             const TFH::TouchPoint t = session.Window()->LastTouch();
             model.last_touch = {t.x, t.y};
             model.last_touch_valid = session.Window()->HasLastTouch();
+            // Research panel (docs/2PLAYER_DOPPEL.md): read the game's session state,
+            // and optionally force the doppel flag while playing.
+            if (cfg.research_force_doppels) TFH::Research::ForceDoppelsEnabled();
+            model.research = TFH::Research::Read();
         }
         if (model.checking && checkFuture.valid() &&
             checkFuture.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
