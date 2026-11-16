@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.1 (2026-11-16)
+### Game
+- Controllers SDL does not recognise as a game controller (vJoy, emulator apps that fake a
+  pad, Windows' synthetic Xbox pads, ...) are now read as generic pads with the usual Xbox
+  layout instead of being ignored.
+- Optional `user/gamecontrollerdb.txt` for extra SDL controller mappings.
+- Settings → Controls: list of detected controllers with live button/axis state and a
+  "Copy controller info" button for bug reports.
+- Newly connected pads are picked up while the game runs; joystick events also arrive while
+  the window is in the background.
+
 ## 0.1.0 (2026-11-15)
 ### Launcher
 - Launcher stays open for the whole session; **Esc** in the game brings it to the front.

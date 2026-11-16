@@ -10,7 +10,7 @@ rem  Game files, the Steamworks SDK, builds and logs are never uploaded.
 rem ============================================================================
 setlocal EnableExtensions
 cd /d "%~dp0"
-set "VERSION=0.1.0"
+set "VERSION=0.1.1"
 set "REPO=Tillundmausi/Triforce-Recompiled"
 echo === Triforce Recompiled %VERSION% - GitHub release ===
 echo.

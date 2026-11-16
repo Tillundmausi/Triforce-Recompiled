@@ -1,11 +1,16 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 # Packs dist\ into release\TriforceRecompiled-v<Version>-windows-x64.zip (+ symbols, checksums).
 # Called by publish_release.bat.
-param([Parameter(Mandatory = $true)][string]$Version)
+param(
+    [Parameter(Mandatory = $true)][string]$Version,
+    # Where the exe/pdb are taken from (default: dist\). Useful while the game is running
+    # and dist\TriforceRecompiled.exe is locked.
+    [string]$DistDir = 'dist'
+)
 $ErrorActionPreference = 'Stop'
 
 $root  = Split-Path -Parent $PSScriptRoot
-$dist  = Join-Path $root 'dist'
+$dist  = if ([System.IO.Path]::IsPathRooted($DistDir)) { $DistDir } else { Join-Path $root $DistDir }
 $out   = Join-Path $root 'release'
 $name  = "TriforceRecompiled-v$Version-windows-x64"
 $stage = Join-Path $out $name
