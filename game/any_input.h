@@ -33,6 +33,11 @@ std::string AnyAnalog(const std::vector<std::string>& params);
 // the emulation thread.
 void RefreshPads();
 
+// True on the frame the given button (SDL_GameControllerButton) goes down on
+// one of those generic pads - used for frontend shortcuts that must also work
+// with pads SDL does not recognise.
+bool RawPadButtonPressed(int controller_button);
+
 // Adds SDL controller mappings from a file (user/gamecontrollerdb.txt).
 // Call after SDL_Init() and before InputCommon::Init().
 void LoadControllerMappings(const std::filesystem::path& file);

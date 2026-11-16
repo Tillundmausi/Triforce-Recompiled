@@ -147,6 +147,30 @@ bool RawHatDown(Uint8 direction) {
     return false;
 }
 
+// SDL_GameControllerButton -> button index of the same pad seen as a plain
+// joystick (Xbox/XInput order: A B X Y LB RB Back Start LS RS Guide, then the
+// D-pad). Used for frontend shortcuts on pads SDL does not recognise.
+int RawButtonIndex(int controller_button) {
+    switch (controller_button) {
+    case SDL_CONTROLLER_BUTTON_A: return 0;
+    case SDL_CONTROLLER_BUTTON_B: return 1;
+    case SDL_CONTROLLER_BUTTON_X: return 2;
+    case SDL_CONTROLLER_BUTTON_Y: return 3;
+    case SDL_CONTROLLER_BUTTON_LEFTSHOULDER: return 4;
+    case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: return 5;
+    case SDL_CONTROLLER_BUTTON_BACK: return 6;
+    case SDL_CONTROLLER_BUTTON_START: return 7;
+    case SDL_CONTROLLER_BUTTON_LEFTSTICK: return 8;
+    case SDL_CONTROLLER_BUTTON_RIGHTSTICK: return 9;
+    case SDL_CONTROLLER_BUTTON_GUIDE: return 10;
+    case SDL_CONTROLLER_BUTTON_DPAD_UP: return 11;
+    case SDL_CONTROLLER_BUTTON_DPAD_DOWN: return 12;
+    case SDL_CONTROLLER_BUTTON_DPAD_LEFT: return 13;
+    case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: return 14;
+    default: return -1;
+    }
+}
+
 class RawPadButtonDevice final : public ::Input::ButtonDevice {
 public:
     RawPadButtonDevice(std::string kind_, int value_) : kind(std::move(kind_)), value(value_) {}
@@ -331,6 +355,29 @@ void RefreshPads() {
                  SDL_JoystickNumHats(joy));
         g_pads.push_back(std::move(pad));
     }
+}
+
+bool RawPadButtonPressed(int controller_button) {
+    const int index = RawButtonIndex(controller_button);
+    if (index < 0) return false;
+    bool down = false;
+    {
+        std::lock_guard<std::mutex> lock(g_pad_mutex);
+        for (const auto& p : g_pads)
+            if (p.joy && index < SDL_JoystickNumButtons(p.joy) && SDL_JoystickGetButton(p.joy, index))
+                down = true;
+    }
+    // Only the rising edge counts, so holding the button does not repeat.
+    static int tracked = -1;
+    static bool previous = false;
+    if (tracked != index) {
+        tracked = index;
+        previous = down;
+        return false;
+    }
+    const bool pressed = down && !previous;
+    previous = down;
+    return pressed;
 }
 
 std::string AnyButton(std::initializer_list<std::string> params) {

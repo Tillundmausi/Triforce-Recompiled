@@ -6,8 +6,10 @@
 #pragma once
 
 #include <atomic>
+#include <chrono>
 #include <cstdint>
 #include <string>
+#include <utility>
 
 #include "core/frontend/emu_window.h"
 
@@ -15,6 +17,14 @@ struct SDL_Window;
 union SDL_Event;
 
 namespace TFH {
+
+// A point on the 3DS touch screen (bottom screen). Always in 3DS pixels
+// (0..319 / 0..239), so it survives window resizes, screen layouts and
+// swapped screens.
+struct TouchPoint {
+    int x = 0;
+    int y = 0;
+};
 
 class SdlEmuWindow final : public Frontend::EmuWindow {
 public:
@@ -30,6 +40,16 @@ public:
     // Releases all held keys/touch (e.g. when the settings window takes focus).
     void ReleaseAllInput();
 
+    // Presses the touch screen at p and releases it again after a few frames.
+    // Used by the frontend's own shortcuts (e.g. the Doppel switch).
+    void TapTouch(const TouchPoint& p);
+    // Releases a synthetic tap once it was held long enough; call every loop.
+    void UpdateTouch();
+    // Last position the mouse touched on the bottom screen.
+    TouchPoint LastTouch() const { return last_touch; }
+    bool HasLastTouch() const { return has_last_touch; }
+    bool HasFocus() const;
+
     bool IsOpen() const { return open.load(); }
     void RequestClose() { open = false; }
     void SetTitle(const std::string& title);
@@ -41,9 +61,17 @@ public:
     void PollEvents() override {}
 
 private:
+    // 3DS touch screen <-> framebuffer (window pixel) coordinates.
+    std::pair<int, int> ToFramebuffer(const TouchPoint& p) const;
+    TouchPoint ToTouchScreen(int framebuffer_x, int framebuffer_y) const;
+
     SDL_Window* window = nullptr;
     std::atomic_bool open{true};
     bool touch_down = false;
+    bool synthetic_touch = false;
+    std::chrono::steady_clock::time_point touch_release_at{};
+    TouchPoint last_touch{};
+    bool has_last_touch = false;
     int held_keys[512] = {};
 };
 

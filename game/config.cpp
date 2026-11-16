@@ -91,6 +91,15 @@ AppConfig LoadConfig(const std::filesystem::path& file) {
     if (auto v = get("volume")) c.volume = std::clamp(ToInt(*v, 100), 0, 100);
     if (auto v = get("controller_enabled")) c.controller_enabled = ToInt(*v, 1) != 0;
     if (auto v = get("stick_deadzone")) c.stick_deadzone = std::clamp(ToFloat(*v, 0.15f), 0.0f, 0.9f);
+    if (auto v = get("doppel_switch")) c.doppel_switch_enabled = ToInt(*v, 1) != 0;
+    if (auto v = get("doppel_key")) c.doppel_key = std::clamp(ToInt(*v, SDL_SCANCODE_TAB), 0, 511);
+    if (auto v = get("doppel_button")) c.doppel_button = std::clamp(ToInt(*v, 8), -1, 20);
+    for (int i = 0; i < 3; ++i) {
+        const std::string kx = "doppel_x" + std::to_string(i + 1);
+        const std::string ky = "doppel_y" + std::to_string(i + 1);
+        if (auto v = get(kx.c_str())) c.doppel_x[i] = std::clamp(ToInt(*v, c.doppel_x[i]), 0, 319);
+        if (auto v = get(ky.c_str())) c.doppel_y[i] = std::clamp(ToInt(*v, c.doppel_y[i]), 0, 239);
+    }
     if (auto v = get("last_join_code")) c.last_join_code = *v;
     if (auto v = get("discord_enabled")) c.discord_enabled = ToInt(*v, 1) != 0;
     if (auto v = get("discord_show_level")) c.discord_show_level = ToInt(*v, 1) != 0;
@@ -124,6 +133,13 @@ void SaveConfig(const AppConfig& c, const std::filesystem::path& file) {
     out << "volume=" << c.volume << '\n';
     out << "controller_enabled=" << c.controller_enabled << '\n';
     out << "stick_deadzone=" << c.stick_deadzone << '\n';
+    out << "doppel_switch=" << c.doppel_switch_enabled << '\n';
+    out << "doppel_key=" << c.doppel_key << '\n';
+    out << "doppel_button=" << c.doppel_button << '\n';
+    for (int i = 0; i < 3; ++i) {
+        out << "doppel_x" << (i + 1) << '=' << c.doppel_x[i] << '\n';
+        out << "doppel_y" << (i + 1) << '=' << c.doppel_y[i] << '\n';
+    }
     out << "last_join_code=" << c.last_join_code << '\n';
     out << "discord_enabled=" << c.discord_enabled << '\n';
     out << "discord_show_level=" << c.discord_show_level << '\n';

@@ -2,6 +2,7 @@
 // Triforce Recompiled - standalone PC version of Tri Force Heroes built on Azahar's 3DS core.
 // The launcher window stays open for the whole session (setup assistant, online lobby,
 // settings); the game runs in its own window next to it.
+#include <algorithm>
 #include <atomic>
 #include <ctime>
 #include <cstdio>
@@ -421,6 +422,23 @@ int main(int argc, char** argv) {
         cfg.layout = kOrder[next];
     };
 
+    // -- Doppel switch (single player) ------------------------------------------------------
+    // The game switches characters when a Doppel panel on the touch screen is
+    // tapped, so the shortcut taps the three panels in turn.
+    int doppelNext = 0;
+    auto tapDoppel = [&](int index) {
+        if (!session.Running()) return;
+        index = std::clamp(index, 0, 2);
+        const TFH::TouchPoint p{cfg.doppel_x[index], cfg.doppel_y[index]};
+        session.Window()->TapTouch(p);
+        LOG_INFO(Frontend, "Doppel switch: tapped panel {} at ({}, {})", index + 1, p.x, p.y);
+    };
+    auto cycleDoppel = [&] {
+        if (!cfg.doppel_switch_enabled || !session.Running()) return;
+        tapDoppel(doppelNext);
+        doppelNext = (doppelNext + 1) % 3;
+    };
+
     while (!quit) {
         // -- events -------------------------------------------------------------------------
         SDL_Event e;
@@ -454,6 +472,14 @@ int main(int argc, char** argv) {
                     settingsFromKeys = true;
                     break;
                 }
+            } else if (session.Running() && cfg.doppel_switch_enabled && cfg.doppel_key > 0 &&
+                       e.type == SDL_KEYDOWN && !e.key.repeat &&
+                       e.key.windowID == session.Window()->WindowId() &&
+                       e.key.keysym.scancode == cfg.doppel_key) {
+                cycleDoppel();
+            } else if (session.Running() && cfg.doppel_switch_enabled && cfg.doppel_button >= 0 &&
+                       e.type == SDL_CONTROLLERBUTTONDOWN && e.cbutton.button == cfg.doppel_button) {
+                cycleDoppel();
             } else if (session.Running()) {
                 session.Window()->HandleEvent(e);
             }
@@ -470,6 +496,17 @@ int main(int argc, char** argv) {
         // -- background work ------------------------------------------------------------------
         steam.RunCallbacks();
         TFH::Input::RefreshPads(); // pads SDL only sees as a plain joystick
+        if (session.Running()) {
+            session.Window()->UpdateTouch(); // release a frontend tap (Doppel switch)
+            // Generic pads are not SDL game controllers, so their button events
+            // never arrive - poll the configured shortcut button instead.
+            if (cfg.doppel_switch_enabled && cfg.doppel_button >= 0 && session.Window()->HasFocus() &&
+                TFH::Input::RawPadButtonPressed(cfg.doppel_button))
+                cycleDoppel();
+            const TFH::TouchPoint t = session.Window()->LastTouch();
+            model.last_touch = {t.x, t.y};
+            model.last_touch_valid = session.Window()->HasLastTouch();
+        }
         if (model.checking && checkFuture.valid() &&
             checkFuture.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
             model.check = checkFuture.get();
@@ -551,6 +588,7 @@ int main(int argc, char** argv) {
             session.Stop();
             model.game_running = false;
         }
+        if (a.doppel_test >= 0) tapDoppel(a.doppel_test);
         if (a.play && !session.Running()) {
             const std::string bootPath = IsCia(model.dump_path) ? InstalledAppPath(model.dump_path) : model.dump_path;
             steam.AttachToEmulator(Common::UTF16ToUTF8(playerName()));

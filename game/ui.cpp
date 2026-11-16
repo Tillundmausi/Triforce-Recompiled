@@ -22,6 +22,7 @@ namespace TFH {
 namespace {
 
 int g_capture_bind = -1; // Bind index waiting for a key, -1 = none
+bool g_capture_doppel = false; // waiting for the Doppel-switch key
 bool g_capture_changed = false;
 
 // Controller list for Settings -> Controls (also used to debug pads that the
@@ -300,7 +301,7 @@ bool DrawDiscord(AppConfig& c, const LauncherModel& m) {
     return changed;
 }
 
-bool DrawControls(AppConfig& c) {
+bool DrawControls(AppConfig& c, const LauncherModel& m, LauncherActions& a) {
     bool changed = false;
     SectionTitle("Keyboard");
     ImGui::TextColored(kMuted, "Click a key, then press the new key (Esc = cancel).");
@@ -380,6 +381,94 @@ bool DrawControls(AppConfig& c) {
             SDL_SetClipboardText(text.c_str());
         }
     }
+
+    SectionTitle("Doppel switch (single player)");
+    changed |= ImGui::Checkbox("Switch characters with one button", &c.doppel_switch_enabled);
+    ImGui::TextColored(kMuted, "In single player the game hands control to whichever Doppel panel you tap. "
+                               "With this on, one key / button taps the three panels in turn.");
+    ImGui::Spacing();
+
+    {
+        ImGui::AlignTextToFramePadding();
+        ImGui::TextUnformatted("Key");
+        ImGui::SameLine(170);
+        const char* key_name = SDL_GetScancodeName(static_cast<SDL_Scancode>(c.doppel_key));
+        const std::string label = g_capture_doppel ? std::string("... press a key ...")
+                                                   : (key_name && *key_name ? key_name : "(none)");
+        if (ImGui::Button(label.c_str(), {220, 0})) g_capture_doppel = true;
+
+        bool clash = false;
+        for (int i = 0; i < static_cast<int>(Bind::Count); ++i) clash = clash || c.keys[i] == c.doppel_key;
+        if (clash && c.doppel_switch_enabled)
+            ImGui::TextColored(kError, "That key also triggers a 3DS button - pick another one.");
+    }
+    {
+        struct Option {
+            const char* name;
+            int value;
+        };
+        static const Option kOptions[] = {
+            {"None", -1},
+            {"Right stick click", SDL_CONTROLLER_BUTTON_RIGHTSTICK},
+            {"Left stick click", SDL_CONTROLLER_BUTTON_LEFTSTICK},
+            {"Left shoulder", SDL_CONTROLLER_BUTTON_LEFTSHOULDER},
+            {"Right shoulder", SDL_CONTROLLER_BUTTON_RIGHTSHOULDER},
+        };
+        constexpr int kCount = static_cast<int>(sizeof(kOptions) / sizeof(kOptions[0]));
+        int current = 0;
+        for (int i = 0; i < kCount; ++i)
+            if (kOptions[i].value == c.doppel_button) current = i;
+        ImGui::AlignTextToFramePadding();
+        ImGui::TextUnformatted("Controller button");
+        ImGui::SameLine(170);
+        ImGui::SetNextItemWidth(220);
+        if (ImGui::BeginCombo("##doppel_button", kOptions[current].name)) {
+            for (int i = 0; i < kCount; ++i) {
+                const bool selected = i == current;
+                if (ImGui::Selectable(kOptions[i].name, selected)) {
+                    c.doppel_button = kOptions[i].value;
+                    changed = true;
+                }
+                if (selected) ImGui::SetItemDefaultFocus();
+            }
+            ImGui::EndCombo();
+        }
+    }
+
+    ImGui::Spacing();
+    ImGui::TextColored(kMuted, "Positions of the three panels on the touch screen (0-319 / 0-239). "
+                               "Tap a panel in the game with the mouse, then press \"Use last tap\".");
+    for (int i = 0; i < 3; ++i) {
+        ImGui::PushID(400 + i);
+        ImGui::AlignTextToFramePadding();
+        ImGui::Text("Panel %d", i + 1);
+        ImGui::SameLine(90);
+        ImGui::SetNextItemWidth(70);
+        if (ImGui::DragInt("x", &c.doppel_x[i], 1, 0, 319)) changed = true;
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth(70);
+        if (ImGui::DragInt("y", &c.doppel_y[i], 1, 0, 239)) changed = true;
+        ImGui::SameLine();
+        char tap_label[64];
+        std::snprintf(tap_label, sizeof(tap_label), "Use last tap (%d, %d)", m.last_touch[0],
+                      m.last_touch[1]);
+        ImGui::BeginDisabled(!m.last_touch_valid);
+        if (ImGui::Button(tap_label)) {
+            c.doppel_x[i] = m.last_touch[0];
+            c.doppel_y[i] = m.last_touch[1];
+            changed = true;
+        }
+        ImGui::EndDisabled();
+        ImGui::SameLine();
+        ImGui::BeginDisabled(!m.game_running);
+        if (ImGui::Button("Tap now")) a.doppel_test = i;
+        ImGui::EndDisabled();
+        ImGui::PopID();
+    }
+    Hint("The defaults are the panels of the normal in-game screen (right column). If a tap lands "
+         "somewhere else, record the three spots with the mouse once - that also covers other screen "
+         "layouts and swapped screens. Multiplayer uses the same panels, so turn this off when you "
+         "play online.");
 
     SectionTitle("Other keys");
     ImGui::TextColored(kMuted, "Esc = open this launcher   F11 = fullscreen   F10 = layout   F9 = swap screens");
@@ -688,6 +777,14 @@ bool Launcher::HandleEvent(const SDL_Event& e, AppConfig& cfg) {
         close_requested = true;
         return true;
     }
+    if (g_capture_doppel && e.type == SDL_KEYDOWN && !e.key.repeat) {
+        if (e.key.keysym.scancode != SDL_SCANCODE_ESCAPE) {
+            cfg.doppel_key = e.key.keysym.scancode;
+            g_capture_changed = true;
+        }
+        g_capture_doppel = false;
+        return true;
+    }
     if (g_capture_bind >= 0 && e.type == SDL_KEYDOWN && !e.key.repeat) {
         if (e.key.keysym.scancode != SDL_SCANCODE_ESCAPE) {
             cfg.keys[g_capture_bind] = e.key.keysym.scancode;
@@ -701,7 +798,7 @@ bool Launcher::HandleEvent(const SDL_Event& e, AppConfig& cfg) {
     return true;
 }
 
-bool IsCapturingKey() { return g_capture_bind >= 0; }
+bool IsCapturingKey() { return g_capture_bind >= 0 || g_capture_doppel; }
 
 LauncherActions Launcher::Frame(LauncherModel& m) {
     LauncherActions a;
@@ -782,7 +879,7 @@ LauncherActions Launcher::Frame(LauncherModel& m) {
                     ImGui::EndTabItem();
                 }
                 if (ImGui::BeginTabItem("Controls")) {
-                    a.settings_changed |= DrawControls(cfg);
+                    a.settings_changed |= DrawControls(cfg, m, a);
                     ImGui::EndTabItem();
                 }
                 const char* sub = std::getenv("TFH_UI_SUBTAB"); // debug aid for screenshots

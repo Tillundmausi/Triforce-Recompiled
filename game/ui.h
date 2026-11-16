@@ -4,6 +4,7 @@
 // online lobby, settings and info. Esc in the game brings it to the front.
 #pragma once
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <string>
@@ -44,6 +45,11 @@ struct LauncherModel {
     std::string last_game_file;  // most recently loaded game file
     std::size_t game_files_seen = 0;
     std::string game_files_log;  // user/log/game_files.txt
+
+    // Last position the mouse touched on the game's bottom screen (3DS pixels),
+    // so the Doppel-panel positions can be picked from the game itself.
+    std::array<int, 2> last_touch{};
+    bool last_touch_valid = false;
 };
 
 // What the user asked for in this frame (handled by main).
@@ -56,6 +62,7 @@ struct LauncherActions {
     std::string path_input;
     bool install = false;
     bool settings_changed = false;
+    int doppel_test = -1;        // tap Doppel panel 0..2 (from the Controls page)
 };
 
 class Launcher {

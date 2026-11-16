@@ -6,6 +6,8 @@
 #include <filesystem>
 #include <string>
 
+#include <SDL_scancode.h>
+
 namespace TFH {
 
 // Keyboard-bindable 3DS inputs (order is also the order shown in the UI).
@@ -42,6 +44,16 @@ struct AppConfig {
     std::array<int, static_cast<int>(Bind::Count)> keys{};
     bool controller_enabled = true;
     float stick_deadzone = 0.15f;
+
+    // Single-player Doppel switch: one key / controller button taps the three
+    // Doppel panels on the touch screen in turn, so switching characters does
+    // not need the mouse. Positions are touch-screen pixels (320x240), which
+    // does not depend on window size, screen layout or swapped screens.
+    bool doppel_switch_enabled = true;
+    int doppel_key = SDL_SCANCODE_TAB;      // SDL_Scancode, 0 = none
+    int doppel_button = 8;                  // SDL_CONTROLLER_BUTTON_RIGHTSTICK, -1 = none
+    std::array<int, 3> doppel_x{236, 236, 236};
+    std::array<int, 3> doppel_y{36, 115, 196};
 
     // Online
     std::string last_join_code;

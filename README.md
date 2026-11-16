@@ -98,6 +98,13 @@ sees (with live buttons/axes); pads it shows as *generic pad* are pads SDL does 
 still work with the usual Xbox layout, and a mapping line for their GUID in `user/gamecontrollerdb.txt`
 fixes wrong buttons.
 
+**Switching characters in single player:** the game hands control to the Doppel whose panel you
+tap on the touch screen. Pressing **Tab** (or clicking the right stick on a controller) does that
+tap for you and cycles through the three panels, so no mouse is needed. Key, controller button and
+the panel positions are under *Settings → Controls → Doppel switch* - if a tap lands in the wrong
+place, tap the panel once with the mouse and press *Use last tap*. In multiplayer the same panels
+show the other players, so turn the shortcut off there.
+
 ## Online co-op
 
 1. Everyone starts Steam and Triforce Recompiled.

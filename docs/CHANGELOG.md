@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+### Game
+- Single player: **Tab** (or the right stick click on a controller) switches between Link and the
+  two Doppels by tapping the Doppel panels on the touch screen, so the mouse is not needed for
+  character switching. Key, controller button and panel positions are configurable in
+  Settings → Controls (with "Use last tap" to pick the spots in the game).
+- The frontend can now tap the touch screen at a given 3DS coordinate, independent of window size,
+  screen layout and swapped screens.
+
 ## 0.1.1 (2026-11-16)
 ### Game
 - Controllers SDL does not recognise as a game controller (vJoy, emulator apps that fake a
