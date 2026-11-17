@@ -1,7 +1,7 @@
 # Triforce Recompiled
 
-**The Legend of Zelda: Tri Force Heroes on PC** – with modern controls, graphics options and
-**online co-op over Steam**.
+**The Legend of Zelda: Tri Force Heroes on PC** – with modern controls, character switching,
+graphics options and **online co-op over Steam**.
 
 > Unofficial fan project. Not affiliated with or endorsed by Nintendo.
 > This repository contains **no Nintendo code, assets or keys** – you need your own,
@@ -23,23 +23,31 @@
   swap screens, texture upscaling and filtering, game speed, asynchronous shaders.
 - **Controls** – keyboard and controllers (Xbox, PlayStation, …) at the same time, every key
   remappable, adjustable stick deadzone, mouse as touch screen.
+- **Switch characters from the pad** – in single player, **Tab** (or a click of the right stick)
+  taps the Doppel panels on the touch screen for you and cycles through Link and the two Doppels.
+  Key, controller button and panel positions are configurable.
 - **Settings while playing** – press **Esc** in the game to bring up the launcher; changes
   apply immediately and are saved.
 - **Discord Rich Presence** – friends see that you play Triforce Recompiled, for how long,
   whether you are in an online lobby (and how full it is) and – once the level list is
   filled in – which area you are in. Can be turned off in *Settings → Discord*.
 - **Crash reports** – `user/crash.txt` + minidump for debugging.
+- **Research panel (developer tool)** – shows the three hero bodies the game keeps (per player
+  slot), copies the state to the clipboard, dumps memory to `user/memdump/` and reads/writes
+  single bytes. Used for the "two players + one doppel" research, see
+  [docs/2PLAYER_DOPPEL.md](docs/2PLAYER_DOPPEL.md).
 
 ## Status
 
 | Area | Status |
 |---|---|
 | Single player | ✅ playable (tested: European version, no update) |
+| Doppel switching (single player) | ✅ Tab / controller button, panel positions configurable |
 | Online co-op (Steam) | ✅ working in first tests |
 | Launcher, setup assistant, settings | ✅ |
 | Native static recompilation (no emulator core) | 🔬 long-term goal, see [docs/RECOMPILATION.md](docs/RECOMPILATION.md) |
 | Discord Rich Presence | ✅ status, play time, lobby / party size · level names: being collected (see below) |
-| 2 players + 1 doppel | 💡 idea, needs game-code research |
+| 2 players + 1 doppel | 💡 not implemented - needs game-code research, see [notes](docs/2PLAYER_DOPPEL.md) |
 
 Under the hood the game currently runs on the core of the open-source 3DS emulator
 [Azahar](https://github.com/azahar-emu/azahar) (successor of Citra), embedded into a
@@ -92,18 +100,20 @@ unzip it anywhere, start `TriforceRecompiled.exe` and follow the **Setup** tab. 
 | Start / Select | Enter / Backspace | Start / Back |
 | Touch screen | mouse (bottom screen) | – |
 
-**Esc** = launcher/settings · **F11** = fullscreen · **F10** = screen layout · **F9** = swap screens.
+**Esc** = launcher/settings · **F11** = fullscreen · **F10** = screen layout · **F9** = swap screens ·
+**Tab** = switch between Link and the two Doppels (single player).
 All keys can be changed in *Settings → Controls*. That page also lists the controllers the game
 sees (with live buttons/axes); pads it shows as *generic pad* are pads SDL does not know - they
 still work with the usual Xbox layout, and a mapping line for their GUID in `user/gamecontrollerdb.txt`
 fixes wrong buttons.
 
 **Switching characters in single player:** the game hands control to the Doppel whose panel you
-tap on the touch screen. Pressing **Tab** (or clicking the right stick on a controller) does that
-tap for you and cycles through the three panels, so no mouse is needed. Key, controller button and
-the panel positions are under *Settings → Controls → Doppel switch* - if a tap lands in the wrong
-place, tap the panel once with the mouse and press *Use last tap*. In multiplayer the same panels
-show the other players, so turn the shortcut off there.
+tap on the touch screen. **Tab** (or the configured controller button) does that tap for you and
+cycles through the three panels - Link, Doppel, Doppel - so no mouse is needed. Key, controller
+button and the three panel positions are under *Settings → Controls → Doppel switch (single player)*;
+if a tap lands in the wrong place, tap the panel once with the mouse in the game and press
+*Use last tap* - that also covers other screen layouts and swapped screens. In multiplayer the same
+panels show the other players, so turn the shortcut off there.
 
 ## Online co-op
 
