@@ -24,6 +24,7 @@ DEFAULT CONTROLS (change them in Settings > Controls)
   ZL / ZR        1 / 3            D-Pad         arrow keys
   Start/Select   Enter / Backspace
   Touch screen   mouse            Launcher      Esc
+  Tab switch Link/Doppels (single player)
   F9 swap screens, F10 next layout, F11 fullscreen
 
 YOUR FILES
